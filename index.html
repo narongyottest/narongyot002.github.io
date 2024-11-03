@@ -1,0 +1,546 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>ง้อง้อค้าบบบ❤</title>
+
+<style>
+html, body {
+  height: 100%;
+  padding: 0;
+  margin: 0;
+  background-color: black;
+}
+canvas {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+}
+</style>
+</head>
+<body>
+
+<canvas id="pinkboard"></canvas>
+<canvas id="stars"></canvas>
+<script>
+var context;
+
+var arr = new Array(); // ประกาศอาร์เรย์เพื่อเก็บข้อมูล
+var starCount = 800; // กำหนดจำนวนดาวทั้งหมด
+
+var rains = new Array(); // ประกาศอาร์เรย์เพื่อเก็บข้อมูลของฝน
+var rainCount = 20; // กำหนดจำนวนของหยดฝน
+
+// ฟังก์ชันสำหรับการเริ่มต้นการตั้งค่าของ canvas และ context
+function init() {
+    // ดึง element ที่มี id เป็น "stars"
+    var stars = document.getElementById("stars");
+    windowWidth = window.innerWidth; // ความกว้างของหน้าต่างปัจจุบัน
+    stars.width = windowWidth; // ตั้งค่าความกว้างของ canvas ให้เท่ากับหน้าต่าง
+    stars.height = window.innerHeight; // ตั้งค่าความสูงของ canvas ให้เท่ากับหน้าต่าง
+    // ดึง context ของ canvas
+    context = stars.getContext("2d");
+}
+
+            // สร้างวัตถุของดาว
+var Star = function () {
+    this.x = windowWidth * Math.random(); // ตำแหน่งแกน X (สุ่ม)
+    this.y = 5000 * Math.random(); // ตำแหน่งแกน Y (สุ่ม)
+    this.text = "❤"; // ข้อความที่จะแสดง
+    this.color = "#ea80b0"; // สีเริ่มต้นของดาว
+
+    // ฟังก์ชันเพื่อสุ่มสี
+    this.getColor = function() {
+        var _r = Math.random();
+        if (_r < 0.5) {
+            this.color = "#333"; // สีมืด
+        } else {
+            this.color = "#ea80b0"; // สีชมพู
+        }
+    }
+
+    // ฟังก์ชันสำหรับการตั้งค่าเริ่มต้น
+    this.init = function() {
+        this.getColor(); // เรียกใช้ฟังก์ชันสุ่มสี
+    }
+
+    // ฟังก์ชันสำหรับการวาดดาว
+    this.draw = function() {
+        context.fillStyle = this.color; // ตั้งค่าสี
+        context.fillText(this.text, this.x, this.y); // วาดข้อความที่ตำแหน่งที่กำหนด
+    }
+}
+
+// เมื่อโหลดหน้าเว็บ
+window.onload = function() {
+    init(); // เรียกใช้ฟังก์ชัน init
+
+    // วาดดาว
+    for (var i = 0; i < starCount; i++) {
+        var star = new Star(); // สร้างวัตถุดาวใหม่
+        star.init(); // ตั้งค่าเริ่มต้น
+        star.draw(); // วาดดาว
+        arr.push(star); // เพิ่มดาวลงในอาร์เรย์
+    }
+
+    // วาดฝนดาวตก
+    for (var i = 0; i < rainCount; i++) {
+        var rain = new MeteorRain(); // สร้างวัตถุฝนดาวตกใหม่
+        rain.init(); // ตั้งค่าเริ่มต้น
+        rain.draw(); // วาดฝนดาวตก
+        rains.push(rain); // เพิ่มฝนดาวตกลงในอาร์เรย์
+    }
+
+    playStars(); // วาดดาวที่ส่องแสงกระพริบ
+    playRains(); // วาดฝนดาวตก
+}
+
+             // ฟังก์ชันทำให้ดาวส่องแสงกระพริบ
+function playStars() {
+    for (var n = 0; n < starCount; n++) {
+        arr[n].getColor(); // เปลี่ยนสีของดาว
+        arr[n].draw(); // วาดดาว
+    }
+    setTimeout("playStars()", 100); // ตั้งเวลาให้ดาวกระพริบทุกๆ 100 มิลลิวินาที
+}
+
+// สร้างวัตถุฝนดาวตก
+var MeteorRain = function() {
+    this.x = -1; // ตำแหน่งแกน X เริ่มต้น
+    this.y = -1; // ตำแหน่งแกน Y เริ่มต้น
+    this.length = -1; // ความยาวของฝนดาวตก
+    this.angle = 30; // มุมเอียงของฝนดาวตก
+    this.width = -1; // ความกว้างของฝนดาวตก
+    this.height = -1; // ความสูงของฝนดาวตก
+    this.speed = 1; // ความเร็วของฝนดาวตก
+    this.offset_x = -1; // ค่าการเลื่อนของแกน X
+    this.offset_y = -1; // ค่าการเลื่อนของแกน Y
+    this.alpha = 1; // ความโปร่งใส
+    this.color1 = "#ea80b0"; // สีของฝนดาวตก
+    this.color2 = ""; // สีของฝนดาวตกเมื่อจางหายไป
+
+    // ฟังก์ชันสำหรับการตั้งค่าเริ่มต้น
+    this.init = function() {
+        this.getPos(); // กำหนดตำแหน่งเริ่มต้น
+        this.alpha = 1; // ตั้งค่าความโปร่งใส
+        this.getRandomColor(); // สุ่มสีของฝนดาวตก
+        // ความยาวขั้นต่ำและสูงสุดของฝนดาวตก
+        var x = Math.random() * 80 + 150;
+        this.length = Math.ceil(x);
+        this.angle = 30; // มุมเอียงของฝนดาวตก
+        x = Math.random() + 0.5;
+        this.speed = Math.ceil(x); // ความเร็วของฝนดาวตก
+        var cos = Math.cos(this.angle * 3.14 / 180);
+        var sin = Math.sin(this.angle * 3.14 / 180);
+        this.width = this.length * cos; // ความกว้างของฝนดาวตก
+        this.height = this.length * sin; // ความสูงของฝนดาวตก
+        this.offset_x = this.speed * cos;
+        this.offset_y = this.speed * sin;
+    }
+
+    // ฟังก์ชันสุ่มสีของฝนดาวตก
+    this.getRandomColor = function() {
+        var a = Math.ceil(255 - 240 * Math.random());
+        // สีตรงกลาง
+        this.color1 = "rgba(" + a + "," + a + "," + a + ",1)";
+        // สีเมื่อสิ้นสุด
+        this.color2 = "black";
+    }
+
+    // ฟังก์ชันคำนวณตำแหน่งของฝนดาวตก
+    this.countPos = function() {
+        // เคลื่อนที่ไปทางซ้ายล่าง, x ลดลง, y เพิ่มขึ้น
+        this.x = this.x - this.offset_x;
+        this.y = this.y + this.offset_y;
+    }
+
+    // ฟังก์ชันกำหนดตำแหน่งเริ่มต้น
+    this.getPos = function() {
+        // กำหนดตำแหน่งแกน X ระหว่าง 200 ถึง 1200
+        this.x = Math.random() * window.innerWidth; // ความกว้างของหน้าต่าง
+        // กำหนดตำแหน่งแกน Y น้อยกว่า 600
+        this.y = Math.random() * window.innerHeight; // ความสูงของหน้าต่าง
+    }
+
+    // ฟังก์ชันวาดฝนดาวตก
+    this.draw = function() {
+        context.save();
+        context.beginPath();
+        context.lineWidth = 1; // กำหนดความกว้างของเส้น
+        context.globalAlpha = this.alpha; // ตั้งค่าความโปร่งใส
+        // สร้างสีแบบไล่เฉดจากจุดเริ่มต้นถึงจุดสิ้นสุด
+        var line = context.createLinearGradient(this.x, this.y,
+            this.x + this.width,
+            this.y - this.height);
+
+
+
+        //分段设置颜色
+        line.addColorStop(0, "#ea80b0");
+        line.addColorStop(0.3, this.color1);
+        line.addColorStop(0.6, this.color2);
+        context.strokeStyle = line;
+        //起点
+        context.moveTo(this.x, this.y);
+        //终点
+        context.lineTo(this.x + this.width, this.y - this.height);
+        context.closePath();
+        context.stroke();
+        context.restore();
+    }
+    this.move = function(){
+        //清空流星像素
+        var x = this.x+this.width-this.offset_x;
+        var y = this.y-this.height;
+        context.clearRect(x-3,y-3,this.offset_x+5,this.offset_y+5);
+//                  context.strokeStyle="red";
+//                  context.strokeRect(x,y-1,this.offset_x+1,this.offset_y+1);
+        //重新计算位置，往左下移动
+        this.countPos();
+        //透明度增加
+        this.alpha -= 0.002;
+        //重绘
+        this.draw();
+    }
+}
+
+// ฟังก์ชันสำหรับวาดภาพลำแสง
+function playRains() {
+    // ลูปเพื่อประมวลผลลำแสงทุกตัวในอาเรย์ rains
+    for (var n = 0; n < rainCount; n++) {
+        var rain = rains[n]; // ดึงลำแสงปัจจุบัน
+        rain.move(); // เรียกใช้ฟังก์ชัน move เพื่ออัปเดตตำแหน่งของลำแสง
+        
+        // ตรวจสอบว่าลำแสงออกนอกขอบเขตของหน้าต่างหรือไม่
+        if (rain.y > window.innerHeight) { // ถ้าลำแสงอยู่ต่ำกว่าขอบเขตแนวตั้งของหน้าต่าง
+            context.clearRect(rain.x, rain.y - rain.height, rain.width, rain.height); // ลบลำแสงที่ออกนอกขอบเขต
+            rains[n] = new MeteorRain(); // สร้างลำแสงใหม่
+            rains[n].init(); // เริ่มต้นลำแสงใหม่
+        }
+    }
+    setTimeout("playRains()", 2); // เรียกใช้ฟังก์ชัน playRains อีกครั้งทุก 2 มิลลิวินาที
+}
+
+
+
+/*
+ * การตั้งค่าต่างๆ
+ */
+ var settings = {
+  particles: {
+    length:   500, // จำนวนสูงสุดของอนุภาค
+    duration:   2, // ระยะเวลาอนุภาคในวินาที
+    velocity: 100, // ความเร็วของอนุภาคในพิกเซล/วินาที
+    effect: -0.75, // ปรับค่านี้เพื่อให้ได้เอฟเฟกต์ที่สวยงาม
+    size:      20, // ขนาดของอนุภาคในพิกเซล
+  },
+};
+
+
+/*
+ * โค้ดนี้เป็น Polyfill สำหรับ requestAnimationFrame โดย Erik M?ller
+ */
+ (function() {
+    var b = 0; // ตัวแปรสำหรับบันทึกเวลา
+    var c = ["ms", "moz", "webkit", "o"]; // ชื่อของไลบรารีที่รองรับ requestAnimationFrame
+    // ตรวจสอบว่าฟังก์ชัน requestAnimationFrame ถูกสนับสนุนหรือไม่
+    for (var a = 0; a < c.length && !window.requestAnimationFrame; ++a) {
+        // ถ้าไม่มีก็จะสร้างฟังก์ชัน requestAnimationFrame ขึ้นมาใหม่
+        window.requestAnimationFrame = window[c[a] + "RequestAnimationFrame"];
+        window.cancelAnimationFrame = window[c[a] + "CancelAnimationFrame"] || window[c[a] + "CancelRequestAnimationFrame"];
+    }
+    // ถ้ายังไม่มี requestAnimationFrame
+    if (!window.requestAnimationFrame) {
+        // สร้างฟังก์ชัน requestAnimationFrame ด้วย setTimeout
+        window.requestAnimationFrame = function(h, e) {
+            var d = new Date().getTime(); // บันทึกเวลาปัจจุบัน
+            var f = Math.max(0, 16 - (d - b)); // คำนวณระยะเวลา
+            var g = window.setTimeout(function() { h(d + f); }, f); // เรียกใช้ฟังก์ชัน h หลังจากที่ผ่านไป f มิลลิวินาที
+            b = d + f; // อัปเดตเวลา
+            return g; // คืนค่า ID ของ timeout
+        };
+    }
+    // ถ้าไม่มี cancelAnimationFrame
+    if (!window.cancelAnimationFrame) {
+        // สร้างฟังก์ชัน cancelAnimationFrame ด้วย clearTimeout
+        window.cancelAnimationFrame = function(d) {
+            clearTimeout(d); // ยกเลิก timeout
+        };
+    }
+}());
+
+
+
+/*
+ * คลาส Point สำหรับสร้างจุดในพื้นที่ 2 มิติ
+ */
+ var Point = (function() {
+  // ฟังก์ชันสร้างคลาส Point
+  function Point(x, y) {
+    // กำหนดค่า x และ y ถ้าไม่ได้กำหนดจะใช้ค่าเริ่มต้นเป็น 0
+    this.x = (typeof x !== 'undefined') ? x : 0; // ถ้ามีการส่งค่า x มาให้ใช้ค่า นอกจากนั้นใช้ 0
+    this.y = (typeof y !== 'undefined') ? y : 0; // ถ้ามีการส่งค่า y มาให้ใช้ค่า นอกจากนั้นใช้ 0
+  }
+  
+  // ฟังก์ชันสำหรับทำสำเนาจุด (Point)
+  Point.prototype.clone = function() {
+    return new Point(this.x, this.y); // คืนค่าจุดใหม่ที่มีค่า x และ y เหมือนเดิม
+  };
+  
+  // ฟังก์ชันสำหรับคำนวณความยาวของเวกเตอร์
+  Point.prototype.length = function(length) {
+    if (typeof length == 'undefined') {
+      // ถ้าไม่ได้ส่งความยาวมา ให้คำนวณและคืนค่าความยาวของเวกเตอร์
+      return Math.sqrt(this.x * this.x + this.y * this.y);
+    }
+    // ถ้ามีความยาวส่งมา ให้ปรับขนาดของเวกเตอร์ให้มีความยาวตามที่กำหนด
+    this.normalize(); // ทำให้เป็นเวกเตอร์หน่วย
+    this.x *= length; // คูณค่า x ด้วยความยาวที่กำหนด
+    this.y *= length; // คูณค่า y ด้วยความยาวที่กำหนด
+    return this; // คืนค่าเวกเตอร์ที่ปรับขนาดแล้ว
+  };
+  
+  // ฟังก์ชันสำหรับปรับเวกเตอร์ให้เป็นเวกเตอร์หน่วย
+  Point.prototype.normalize = function() {
+    var length = this.length(); // คำนวณความยาวของเวกเตอร์
+    this.x /= length; // แบ่งค่า x ด้วยความยาว
+    this.y /= length; // แบ่งค่า y ด้วยความยาว
+    return this; // คืนค่าเวกเตอร์ที่ถูกปรับเป็นเวกเตอร์หน่วย
+  };
+  
+  return Point; // คืนค่าคลาส Point
+})();
+
+
+
+/*
+ * คลาส Particle สำหรับสร้างอนุภาค (Particle)
+ */
+ var Particle = (function() {
+  // ฟังก์ชันสร้างคลาส Particle
+  function Particle() {
+    // กำหนดตำแหน่ง, ความเร็ว, การเร่ง และอายุของอนุภาค
+    this.position = new Point(); // สร้างอ็อบเจกต์ Point สำหรับตำแหน่งเริ่มต้นของอนุภาค
+    this.velocity = new Point(); // สร้างอ็อบเจกต์ Point สำหรับความเร็วเริ่มต้นของอนุภาค
+    this.acceleration = new Point(); // สร้างอ็อบเจกต์ Point สำหรับการเร่งเริ่มต้นของอนุภาค
+    this.age = 0; // ตั้งค่าอายุของอนุภาคเริ่มต้นเป็น 0
+  }
+  
+  // ฟังก์ชันสำหรับการเริ่มต้นอนุภาค
+  Particle.prototype.initialize = function(x, y, dx, dy) {
+    this.position.x = x; // ตั้งค่าตำแหน่ง x ของอนุภาค
+    this.position.y = y; // ตั้งค่าตำแหน่ง y ของอนุภาค
+    this.velocity.x = dx; // ตั้งค่าความเร็ว x ของอนุภาค
+    this.velocity.y = dy; // ตั้งค่าความเร็ว y ของอนุภาค
+    // คำนวณการเร่งตามความเร็ว และตั้งค่าให้กับอนุภาค
+    this.acceleration.x = dx * settings.particles.effect; // คำนวณการเร่ง x จากความเร็ว
+    this.acceleration.y = dy * settings.particles.effect; // คำนวณการเร่ง y จากความเร็ว
+    this.age = 0; // ตั้งค่าอายุของอนุภาคเป็น 0
+  };
+  
+  // ฟังก์ชันสำหรับอัปเดตสถานะของอนุภาค
+  Particle.prototype.update = function(deltaTime) {
+    // อัปเดตตำแหน่งของอนุภาคตามความเร็ว
+    this.position.x += this.velocity.x * deltaTime; // อัปเดตตำแหน่ง x ของอนุภาค
+    this.position.y += this.velocity.y * deltaTime; // อัปเดตตำแหน่ง y ของอนุภาค
+    // อัปเดตความเร็วของอนุภาคตามการเร่ง
+    this.velocity.x += this.acceleration.x * deltaTime; // อัปเดตความเร็ว x ของอนุภาค
+    this.velocity.y += this.acceleration.y * deltaTime; // อัปเดตความเร็ว y ของอนุภาค
+    this.age += deltaTime; // เพิ่มอายุของอนุภาค
+  };
+  
+  // ฟังก์ชันสำหรับวาดอนุภาคลงบน canvas
+  Particle.prototype.draw = function(context, image) {
+    // ฟังก์ชัน easing สำหรับการเปลี่ยนขนาดของอนุภาค
+    function ease(t) {
+      return (--t) * t * t + 1; // คำนวณค่าที่เปลี่ยนแปลงตามอายุ
+    }
+    // คำนวณขนาดของอนุภาคตามอายุ
+    var size = image.width * ease(this.age / settings.particles.duration); // ขนาดอนุภาคจะเปลี่ยนตามอายุ
+    context.globalAlpha = 1 - this.age / settings.particles.duration; // ปรับค่าความโปร่งใสของอนุภาค
+    // วาดอนุภาคลงบน canvas โดยใช้ค่าตำแหน่งและขนาดที่คำนวณไว้
+    context.drawImage(image, this.position.x - size / 2, this.position.y - size / 2, size, size);
+  };
+  
+  return Particle; // คืนค่าคลาส Particle
+})();
+
+
+
+
+
+/*
+ * คลาส ParticlePool สำหรับจัดการอนุภาค
+ * คลาสนี้ใช้สำหรับสร้างและควบคุมกลุ่มอนุภาค (Particle) โดยจัดเก็บอนุภาคไว้ในอาเรย์
+ * และทำให้สามารถเพิ่ม อัปเดต และวาดอนุภาคได้อย่างมีประสิทธิภาพ
+ */
+ var ParticlePool = (function() {
+  var particles, // ตัวแปรสำหรับเก็บอนุภาคทั้งหมด
+      firstActive = 0, // ตัวแปรสำหรับติดตามตำแหน่งแรกของอนุภาคที่กำลังใช้งานอยู่
+      firstFree   = 0, // ตัวแปรสำหรับติดตามตำแหน่งแรกของอนุภาคที่ว่างอยู่
+      duration    = settings.particles.duration; // ระยะเวลาที่อนุภาคจะมีชีวิตอยู่จากการตั้งค่า
+
+  // ฟังก์ชันสร้างคลาส ParticlePool
+  function ParticlePool(length) {
+    // สร้างและเติมอนุภาคในพูลตามความยาวที่กำหนด
+    particles = new Array(length); // สร้างอาเรย์ที่เก็บอนุภาค
+    for (var i = 0; i < particles.length; i++)
+      particles[i] = new Particle(); // สร้างอนุภาคใหม่และเก็บในอาเรย์
+  }
+
+  // ฟังก์ชันสำหรับเพิ่มอนุภาคใหม่เข้าสู่พูล
+  ParticlePool.prototype.add = function(x, y, dx, dy) {
+    particles[firstFree].initialize(x, y, dx, dy); // เริ่มต้นอนุภาคใหม่ที่ตำแหน่ง (x, y) และความเร็ว (dx, dy)
+
+    // จัดการกับวงกลมของคิวอนุภาค
+    firstFree++; // เพิ่มตำแหน่งแรกของอนุภาคที่ว่าง
+    if (firstFree   == particles.length) firstFree   = 0; // ถ้าผ่านจุดสิ้นสุดของอาเรย์ ให้กลับไปเริ่มต้นที่ 0
+    if (firstActive == firstFree       ) firstActive++; // ถ้าตำแหน่งแรกของอนุภาคที่ใช้งานและว่างตรงกัน ให้เพิ่มตำแหน่งแรกของอนุภาคที่ใช้งาน
+    if (firstActive == particles.length) firstActive = 0; // ถ้าผ่านจุดสิ้นสุดของอาเรย์ ให้กลับไปเริ่มต้นที่ 0
+  };
+
+  // ฟังก์ชันสำหรับอัปเดตสถานะของอนุภาคในพูล
+  ParticlePool.prototype.update = function(deltaTime) {
+    var i;
+
+    // อัปเดตอนุภาคที่กำลังใช้งานอยู่
+    if (firstActive < firstFree) { // ถ้าตำแหน่งแรกของอนุภาคที่ใช้งานอยู่มีค่าน้อยกว่าตำแหน่งแรกของอนุภาคที่ว่าง
+      for (i = firstActive; i < firstFree; i++)
+        particles[i].update(deltaTime); // อัปเดตอนุภาคในช่วงแรก
+    }
+    if (firstFree < firstActive) { // ถ้าตำแหน่งแรกของอนุภาคที่ว่างมีค่าน้อยกว่าตำแหน่งแรกของอนุภาคที่ใช้งาน
+      for (i = firstActive; i < particles.length; i++)
+        particles[i].update(deltaTime); // อัปเดตอนุภาคในช่วงแรก
+      for (i = 0; i < firstFree; i++)
+        particles[i].update(deltaTime); // อัปเดตอนุภาคในช่วงสุดท้าย
+    }
+
+    // ลบอนุภาคที่หมดอายุ
+    while (particles[firstActive].age >= duration && firstActive != firstFree) {
+      firstActive++; // เพิ่มตำแหน่งแรกของอนุภาคที่ใช้งาน
+      if (firstActive == particles.length) firstActive = 0; // ถ้าผ่านจุดสิ้นสุดของอาเรย์ ให้กลับไปเริ่มต้นที่ 0
+    }
+  };
+
+  // ฟังก์ชันสำหรับวาดอนุภาคที่กำลังใช้งานอยู่ลงบน canvas
+  ParticlePool.prototype.draw = function(context, image) {
+    // วาดอนุภาคที่กำลังใช้งานอยู่
+    if (firstActive < firstFree) { // ถ้าตำแหน่งแรกของอนุภาคที่ใช้งานมีค่าน้อยกว่าตำแหน่งแรกของอนุภาคที่ว่าง
+      for (i = firstActive; i < firstFree; i++)
+        particles[i].draw(context, image); // วาดอนุภาคในช่วงแรก
+    }
+    if (firstFree < firstActive) { // ถ้าตำแหน่งแรกของอนุภาคที่ว่างมีค่าน้อยกว่าตำแหน่งแรกของอนุภาคที่ใช้งาน
+      for (i = firstActive; i < particles.length; i++)
+        particles[i].draw(context, image); // วาดอนุภาคในช่วงแรก
+      for (i = 0; i < firstFree; i++)
+        particles[i].draw(context, image); // วาดอนุภาคในช่วงสุดท้าย
+    }
+  };
+
+  return ParticlePool; // คืนค่าคลาส ParticlePool
+})();
+
+
+
+
+
+
+/*
+ * รวมทุกอย่างเข้าด้วยกัน
+ */
+ (function(canvas) {
+  var context = canvas.getContext('2d'), // กำหนด context สำหรับการวาดบน canvas
+      particles = new ParticlePool(settings.particles.length), // สร้างพูลอนุภาคใหม่โดยใช้ความยาวที่ตั้งค่า
+      particleRate = settings.particles.length / settings.particles.duration, // อัตราการสร้างอนุภาค (อนุภาค/วินาที)
+      time; // ตัวแปรสำหรับเก็บเวลา
+
+  // ฟังก์ชันเพื่อคำนวณพอยต์บนรูปหัวใจ โดย -PI <= t <= PI
+  function pointOnHeart(t) {
+    return new Point(
+      160 * Math.pow(Math.sin(t), 3), // คำนวณตำแหน่ง x
+      130 * Math.cos(t) - 50 * Math.cos(2 * t) - 20 * Math.cos(3 * t) - 10 * Math.cos(4 * t) + 25 // คำนวณตำแหน่ง y
+    );
+  }
+
+  // สร้างภาพอนุภาคโดยใช้ canvas ชั่วคราว
+  var image = (function() {
+    var tempCanvas = document.createElement('canvas'), // สร้าง canvas ใหม่
+        tempContext = tempCanvas.getContext('2d'); // กำหนด context สำหรับ canvas
+    tempCanvas.width  = settings.particles.size; // ตั้งค่าขนาดของ canvas
+    tempCanvas.height = settings.particles.size; // ตั้งค่าขนาดของ canvas
+
+    // ฟังก์ชันช่วยในการสร้างพาธ
+    function to(t) {
+      var point = pointOnHeart(t); // คำนวณพอยต์จากรูปหัวใจ
+      point.x = tempCanvas.width / 2 + point.x * tempCanvas.width / 350; // ปรับตำแหน่ง x
+      point.y = tempCanvas.height / 2 - point.y * tempCanvas.height / 350; // ปรับตำแหน่ง y
+      return point; // คืนค่าพอยต์
+    }
+
+    // สร้างพาธ
+    tempContext.beginPath(); // เริ่มต้นพาธใหม่
+    var t = -Math.PI; // กำหนดค่าเริ่มต้นของ t
+    var point = to(t); // คำนวณพอยต์เริ่มต้น
+    tempContext.moveTo(point.x, point.y); // ย้ายไปยังพอยต์เริ่มต้น
+    while (t < Math.PI) { // ทำซ้ำจนกว่า t จะถึง PI
+      t += 0.01; // เพิ่มค่า t เล็กน้อย
+      point = to(t); // คำนวณพอยต์ใหม่
+      tempContext.lineTo(point.x, point.y); // สร้างเส้นจากพอยต์ก่อนหน้าไปยังพอยต์ใหม่
+    }
+    tempContext.closePath(); // ปิดพาธ
+    // สร้างสีเติม
+    tempContext.fillStyle = '#ea80b0'; // ตั้งค่าสีเติม
+    tempContext.fill(); // เติมสีในพาธ
+
+    // สร้างภาพจาก canvas
+    var image = new Image(); // สร้างอ็อบเจ็กต์ภาพใหม่
+    image.src = tempCanvas.toDataURL(); // กำหนดแหล่งข้อมูลของภาพจาก canvas
+    return image; // คืนค่าภาพ
+  })();
+
+  // ฟังก์ชันสำหรับแสดงผล
+  function render() {
+    // เรียกใช้การแอนิเมชันถัดไป
+    requestAnimationFrame(render);
+
+    // อัปเดตเวลา
+    var newTime = new Date().getTime() / 1000; // รับเวลาปัจจุบันเป็นวินาที
+    var deltaTime = newTime - (time || newTime); // คำนวณความแตกต่างระหว่างเวลาใหม่และเวลาเก่า
+    time = newTime; // กำหนดเวลาใหม่
+
+    // ล้าง canvas
+    context.clearRect(0, 0, canvas.width, canvas.height); // ลบเนื้อหาทั้งหมดใน canvas
+
+    // สร้างอนุภาคใหม่
+    var amount = Math.floor(particleRate * deltaTime); // คำนวณจำนวนอนุภาคใหม่ที่จะสร้างในช่วงเวลา deltaTime
+    for (var i = 0; i < amount; i++) { // ทำซ้ำตามจำนวนที่คำนวณได้
+      var pos = pointOnHeart(Math.PI - 2 * Math.PI * Math.random()); // คำนวณตำแหน่งสุ่มบนรูปหัวใจ
+      var dir = pos.clone().length(settings.particles.velocity); // คำนวณทิศทางและความเร็วของอนุภาค
+      particles.add(canvas.width / 2 + pos.x, canvas.height / 2 - pos.y, dir.x, -dir.y); // เพิ่มอนุภาคใหม่ลงในพูล
+    }
+
+    // อัปเดตสถานะและวาดอนุภาค
+    particles.update(deltaTime); // เรียกฟังก์ชันเพื่ออัปเดตสถานะของอนุภาคตามค่า deltaTime
+    particles.draw(context, image); // วาดอนุภาคลงบน canvas โดยใช้ context และภาพที่สร้างขึ้น
+  }
+
+  // ฟังก์ชันจัดการการเปลี่ยนขนาดของ canvas
+  function onResize() {
+    canvas.width = canvas.clientWidth; // ตั้งค่าความกว้างของ canvas ให้ตรงกับความกว้างของ element ที่เก็บอยู่ใน DOM
+    canvas.height = canvas.clientHeight; // ตั้งค่าความสูงของ canvas ให้ตรงกับความสูงของ element ที่เก็บอยู่ใน DOM
+  }
+
+  window.onresize = onResize; // ตั้งค่าให้เรียกใช้ฟังก์ชัน onResize เมื่อมีการเปลี่ยนขนาดหน้าต่าง
+
+  // หน่วงเวลาในการเริ่มการเรนเดอร์
+  setTimeout(function() {
+    onResize(); // เรียกใช้ฟังก์ชัน onResize เพื่อปรับขนาด canvas
+    render(); // เรียกฟังก์ชัน render เพื่อเริ่มการแสดงผลอนุภาค
+  }, 10); // หน่วงเวลา 10 มิลลิวินาที
+})(document.getElementById('pinkboard')); // เรียกใช้ IIFE โดยส่ง element ที่มี id เป็น 'pinkboard' เข้ามา
+
+</script>
+
+</body>
+</html>
+
